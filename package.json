@@ -1,0 +1,47 @@
+{
+  "name": "wordsrepeat",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "redis:start": "docker compose -f docker-compose.redis.yml up -d",
+    "redis:stop": "docker compose -f docker-compose.redis.yml down",
+    "stack:pull": "docker compose --env-file infra/supabase/.env -f infra/supabase/docker-compose.yml -f infra/supabase/docker-compose.frontend.yml pull",
+    "stack:build": "docker compose --env-file infra/supabase/.env -f infra/supabase/docker-compose.yml -f infra/supabase/docker-compose.frontend.yml build frontend",
+    "stack:up": "docker compose --env-file infra/supabase/.env -f infra/supabase/docker-compose.yml -f infra/supabase/docker-compose.frontend.yml up -d",
+    "stack:down": "docker compose --env-file infra/supabase/.env -f infra/supabase/docker-compose.yml -f infra/supabase/docker-compose.frontend.yml down",
+    "stack:ps": "docker compose --env-file infra/supabase/.env -f infra/supabase/docker-compose.yml -f infra/supabase/docker-compose.frontend.yml ps"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.45.4",
+    "@tanstack/react-query": "^5.59.16",
+    "clsx": "^2.1.1",
+    "flowbite": "^2.5.2",
+    "flowbite-react": "^0.10.2",
+    "ioredis": "^5.4.1",
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.16",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.16",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3"
+  }
+}

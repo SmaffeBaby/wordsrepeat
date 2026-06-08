@@ -1,0 +1,46 @@
+services:
+  db:
+    volumes:
+      - ./volumes/db/init/97-graphql-public.sql:/docker-entrypoint-initdb.d/migrations/97-graphql-public.sql:Z
+      - ./volumes/db/init/98-realtime-tenant.sql:/docker-entrypoint-initdb.d/migrations/98-realtime-tenant.sql:Z
+      - ./volumes/db/init/100-wordsrepeat.sql:/docker-entrypoint-initdb.d/migrations/100-wordsrepeat.sql:Z
+      - ./volumes/db/init/101-wordsrepeat-storage.sql:/docker-entrypoint-initdb.d/migrations/101-wordsrepeat-storage.sql:Z
+
+  frontend:
+    container_name: wordsrepeat-frontend
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_PUBLIC_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+    restart: unless-stopped
+    depends_on:
+      kong:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_PUBLIC_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_INTERNAL_URL: http://kong:8000
+      REDIS_URL: redis://redis:6379
+
+  redis:
+    container_name: wordsrepeat-redis
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - wordsrepeat-redis-data:/data
+
+volumes:
+  wordsrepeat-redis-data:
