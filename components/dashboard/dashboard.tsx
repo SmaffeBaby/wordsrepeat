@@ -2,10 +2,12 @@
 
 import { CardComposer } from "@/components/cards/card-composer";
 import { Collection } from "@/components/cards/collection";
+import { CollectionFilter } from "@/components/cards/collection-filter";
 import type { DashboardPage } from "@/components/client-app";
 import { CategorySidebar } from "@/components/dashboard/category-sidebar";
 import { ReviewPageContent } from "@/components/review/review-page-content";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useCollectionFilter } from "@/hooks/use-collection-filter";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Session } from "@supabase/supabase-js";
@@ -21,6 +23,8 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
     selectedCategory,
     authFetch
   );
+  const cards = cardsQuery.data ?? [];
+  const { filteredCards, filters, resetFilters, updateFilter } = useCollectionFilter(cards);
 
   return (
     <main className="min-h-screen bg-mist">
@@ -101,10 +105,18 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
                 onSaved={invalidateCards}
                 selectedCategory={selectedCategory}
               />
+              <CollectionFilter
+                filteredCount={filteredCards.length}
+                filters={filters}
+                onReset={resetFilters}
+                onUpdate={updateFilter}
+                totalCount={cards.length}
+              />
               <Collection
                 authFetch={authFetch}
-                cards={cardsQuery.data ?? []}
+                cards={filteredCards}
                 categories={categoriesQuery.data ?? []}
+                emptyMessage={cards.length === 0 ? "В коллекции пока нет карточек." : "По фильтру ничего не найдено."}
                 isLoading={cardsQuery.isLoading}
                 onUpdated={invalidateCards}
               />

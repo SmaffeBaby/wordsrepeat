@@ -4,19 +4,22 @@ import { CardComposer } from "@/components/cards/card-composer";
 import type { Card, Category } from "@/lib/types";
 import { REVIEW_INTERVALS } from "@/lib/types";
 import { Badge, Button, Spinner } from "flowbite-react";
-import { Image as ImageIcon, Pencil } from "lucide-react";
+import { Clock3, Image as ImageIcon, Pencil } from "lucide-react";
 import { useState } from "react";
+import Countdown from "react-countdown";
 
 export function Collection({
   authFetch,
   cards,
   categories,
+  emptyMessage = "В коллекции пока нет карточек.",
   isLoading,
   onUpdated
 }: {
   authFetch: <T>(url: string, options?: RequestInit) => Promise<T>;
   cards: Card[];
   categories: Category[];
+  emptyMessage?: string;
   isLoading: boolean;
   onUpdated: () => void;
 }) {
@@ -86,7 +89,7 @@ export function Collection({
               {card.hint ? <p className="text-sm text-gray-500">Подсказка: {card.hint}</p> : null}
               <div className="flex items-center justify-between gap-3 text-xs text-gray-400">
                 <span className="truncate">{card.categories?.title}</span>
-                <span className="shrink-0">Срок: {new Date(card.due_at).toLocaleString("ru-RU")}</span>
+                <CardDueCountdown dueAt={card.due_at} />
               </div>
             </div>
           </article>
@@ -94,9 +97,32 @@ export function Collection({
       )}
       {cards.length === 0 ? (
         <div className="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm md:col-span-2 xl:col-span-3">
-          В коллекции пока нет карточек.
+          {emptyMessage}
         </div>
       ) : null}
     </div>
+  );
+}
+
+function CardDueCountdown({ dueAt }: { dueAt: string }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      <Clock3 className="h-3.5 w-3.5" />
+      <Countdown
+        date={new Date(dueAt)}
+        renderer={({ completed, days, hours, minutes, seconds }) => {
+          if (completed) return <span className="font-semibold text-emerald-600">Пора повторять</span>;
+
+          const parts = [
+            days > 0 ? `${days} д` : null,
+            hours > 0 ? `${hours} ч` : null,
+            minutes > 0 ? `${minutes} мин` : null,
+            days === 0 && hours === 0 && minutes === 0 ? `${seconds} сек` : null
+          ].filter(Boolean);
+
+          return <span>Осталось: {parts.join(" ")}</span>;
+        }}
+      />
+    </span>
   );
 }
