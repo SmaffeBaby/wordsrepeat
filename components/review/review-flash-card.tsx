@@ -78,6 +78,16 @@ export function ReviewFlashCard({
 
       <div className="mt-5 rounded-lg bg-gray-50 p-4 text-lg leading-8 text-gray-800">
         <p className={showValue || isPreview ? "" : "card-value-blur"}>{card.value}</p>
+        {card.answer_image_url ? (
+          <div
+            className={`relative mt-4 h-44 overflow-hidden rounded-lg bg-gray-200 sm:h-52 ${
+              showValue || isPreview ? "" : "card-value-blur"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={card.answer_image_url} alt="" className="h-full w-full object-cover" />
+          </div>
+        ) : null}
       </div>
 
       {!isPreview && showHint && card.hint ? (

@@ -16,6 +16,7 @@ export type Card = {
   value: string;
   hint: string | null;
   image_url: string | null;
+  answer_image_url: string | null;
   interval_minutes: number;
   due_at: string;
   deck_position: number;

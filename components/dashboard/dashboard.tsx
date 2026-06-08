@@ -9,7 +9,7 @@ import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Session } from "@supabase/supabase-js";
-import { Badge, Button, Tooltip } from "flowbite-react";
+import { Badge, Button } from "flowbite-react";
 import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -98,10 +98,16 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
               <CardComposer
                 authFetch={authFetch}
                 categories={categoriesQuery.data ?? []}
-                onCreated={invalidateCards}
+                onSaved={invalidateCards}
                 selectedCategory={selectedCategory}
               />
-              <Collection cards={cardsQuery.data ?? []} isLoading={cardsQuery.isLoading} />
+              <Collection
+                authFetch={authFetch}
+                cards={cardsQuery.data ?? []}
+                categories={categoriesQuery.data ?? []}
+                isLoading={cardsQuery.isLoading}
+                onUpdated={invalidateCards}
+              />
             </>
           )}
         </section>

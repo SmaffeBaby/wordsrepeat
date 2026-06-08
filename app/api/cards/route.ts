@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       value: body.value.trim(),
       hint: body.hint?.trim() || null,
       image_url: body.image_url || null,
+      answer_image_url: body.answer_image_url || null,
       interval_minutes: interval,
       due_at: new Date().toISOString()
     })
@@ -98,6 +99,7 @@ export async function PATCH(request: Request) {
   if (body.value !== undefined) updates.value = body.value.trim();
   if (body.hint !== undefined) updates.hint = body.hint?.trim() || null;
   if (body.image_url !== undefined) updates.image_url = body.image_url;
+  if (body.answer_image_url !== undefined) updates.answer_image_url = body.answer_image_url;
   if (body.category_id !== undefined) updates.category_id = body.category_id;
   if (body.interval_minutes !== undefined) {
     const interval = Number(body.interval_minutes);
@@ -106,6 +108,14 @@ export async function PATCH(request: Request) {
     }
     updates.interval_minutes = interval;
   }
+
+  const { data: currentCard, error: currentCardError } = await auth.supabase
+    .from("cards")
+    .select("category_id")
+    .eq("id", body.id)
+    .single();
+
+  if (currentCardError) return NextResponse.json({ error: currentCardError.message }, { status: 500 });
 
   const { data, error } = await auth.supabase
     .from("cards")
@@ -119,9 +129,42 @@ export async function PATCH(request: Request) {
   await deleteCache(
     ...cardCacheKeys(auth.user.id),
     `cards:${auth.user.id}:all:all`,
+    `cards:${auth.user.id}:all:${currentCard.category_id}`,
     `cards:${auth.user.id}:all:${data.category_id}`,
     `cards:${auth.user.id}:due:all`,
+    `cards:${auth.user.id}:due:${currentCard.category_id}`,
     `cards:${auth.user.id}:due:${data.category_id}`
   );
   return NextResponse.json(data);
+}
+
+export async function DELETE(request: Request) {
+  const auth = await getUserFromRequest(request);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: 401 });
+
+  const body = (await request.json()) as { id?: string };
+
+  if (!body.id) return NextResponse.json({ error: "Нужен id карточки" }, { status: 400 });
+
+  const { data: currentCard, error: currentCardError } = await auth.supabase
+    .from("cards")
+    .select("category_id")
+    .eq("id", body.id)
+    .single();
+
+  if (currentCardError) return NextResponse.json({ error: currentCardError.message }, { status: 500 });
+
+  const { error } = await auth.supabase.from("cards").delete().eq("id", body.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await deleteCache(
+    ...cardCacheKeys(auth.user.id),
+    `cards:${auth.user.id}:all:all`,
+    `cards:${auth.user.id}:all:${currentCard.category_id}`,
+    `cards:${auth.user.id}:due:all`,
+    `cards:${auth.user.id}:due:${currentCard.category_id}`
+  );
+
+  return NextResponse.json({ ok: true });
 }

@@ -17,6 +17,7 @@ create table public.cards (
   value text not null check (char_length(value) between 1 and 3000),
   hint text check (hint is null or char_length(hint) <= 500),
   image_url text,
+  answer_image_url text,
   interval_minutes integer not null default 60 check (interval_minutes in (5, 10, 20, 60, 180, 360, 720, 1440, 4320, 10080)),
   due_at timestamptz not null default now(),
   deck_position integer not null default 0,
