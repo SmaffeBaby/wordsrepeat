@@ -3,18 +3,22 @@
 import { CardComposer } from "@/components/cards/card-composer";
 import { Collection } from "@/components/cards/collection";
 import { CollectionFilter } from "@/components/cards/collection-filter";
+import { CollectionPagination } from "@/components/cards/collection-pagination";
+import { CollectionSort } from "@/components/cards/collection-sort";
 import type { DashboardPage } from "@/components/client-app";
 import { CategorySidebar } from "@/components/dashboard/category-sidebar";
 import { ReviewPageContent } from "@/components/review/review-page-content";
 import { useAuthFetch } from "@/hooks/use-auth-fetch";
 import { useCollectionFilter } from "@/hooks/use-collection-filter";
+import { useCollectionPagination } from "@/hooks/use-collection-pagination";
+import { useCollectionSort } from "@/hooks/use-collection-sort";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Session } from "@supabase/supabase-js";
 import { Badge, Button } from "flowbite-react";
 import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function Dashboard({ page, session }: { page: DashboardPage; session: Session }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -23,8 +27,71 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
     selectedCategory,
     authFetch
   );
-  const cards = cardsQuery.data ?? [];
+  const cards = useMemo(() => cardsQuery.data ?? [], [cardsQuery.data]);
   const { filteredCards, filters, resetFilters, updateFilter } = useCollectionFilter(cards);
+  const { resetSort, sort, sortedCards, updateSort } = useCollectionSort(filteredCards);
+  const {
+    page: collectionPage,
+    pageSize,
+    paginatedCards,
+    setPage: setCollectionPage,
+    setPageSize,
+    totalPages
+  } = useCollectionPagination(sortedCards);
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const [isDeletingSelected, setIsDeletingSelected] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const visibleCardIds = useMemo(() => paginatedCards.map((card) => card.id), [paginatedCards]);
+  const allVisibleSelected = visibleCardIds.length > 0 && visibleCardIds.every((id) => selectedCardIds.has(id));
+
+  useEffect(() => {
+    const existingCardIds = new Set(cards.map((card) => card.id));
+    setSelectedCardIds((current) => new Set([...current].filter((id) => existingCardIds.has(id))));
+  }, [cards]);
+
+  function toggleSelectedCard(cardId: string, selected: boolean) {
+    setSelectedCardIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(cardId);
+      else next.delete(cardId);
+      return next;
+    });
+  }
+
+  function toggleVisibleCards() {
+    setSelectedCardIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) visibleCardIds.forEach((id) => next.delete(id));
+      else visibleCardIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  async function deleteSelectedCards() {
+    const ids = [...selectedCardIds];
+    if (ids.length === 0) return;
+    const confirmed = window.confirm(`Удалить выбранные карточки (${ids.length})?`);
+    if (!confirmed) return;
+
+    setIsDeletingSelected(true);
+    setBulkError(null);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          authFetch<{ ok: boolean }>("/api/cards", {
+            method: "DELETE",
+            body: JSON.stringify({ id })
+          })
+        )
+      );
+      setSelectedCardIds(new Set());
+      invalidateCards();
+    } catch (error) {
+      setBulkError(error instanceof Error ? error.message : "Не удалось удалить выбранные карточки");
+    } finally {
+      setIsDeletingSelected(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-mist">
@@ -112,13 +179,35 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
                 onUpdate={updateFilter}
                 totalCount={cards.length}
               />
+              <CollectionSort
+                allVisibleSelected={allVisibleSelected}
+                deleting={isDeletingSelected}
+                onDeleteSelected={deleteSelectedCards}
+                onReset={resetSort}
+                onSelectVisible={toggleVisibleCards}
+                onUpdate={updateSort}
+                selectedCount={selectedCardIds.size}
+                sort={sort}
+                visibleCount={visibleCardIds.length}
+              />
+              {bulkError ? <p className="text-sm text-red-600">{bulkError}</p> : null}
+              <CollectionPagination
+                page={collectionPage}
+                pageSize={pageSize}
+                setPage={setCollectionPage}
+                setPageSize={setPageSize}
+                totalCount={sortedCards.length}
+                totalPages={totalPages}
+              />
               <Collection
                 authFetch={authFetch}
-                cards={filteredCards}
+                cards={paginatedCards}
                 categories={categoriesQuery.data ?? []}
                 emptyMessage={cards.length === 0 ? "В коллекции пока нет карточек." : "По фильтру ничего не найдено."}
                 isLoading={cardsQuery.isLoading}
                 onUpdated={invalidateCards}
+                onToggleSelected={toggleSelectedCard}
+                selectedCardIds={selectedCardIds}
               />
             </>
           )}

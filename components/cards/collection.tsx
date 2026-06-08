@@ -3,7 +3,7 @@
 import { CardComposer } from "@/components/cards/card-composer";
 import type { Card, Category } from "@/lib/types";
 import { REVIEW_INTERVALS } from "@/lib/types";
-import { Badge, Button, Spinner } from "flowbite-react";
+import { Badge, Button, Checkbox, Spinner } from "flowbite-react";
 import { Clock3, Image as ImageIcon, Pencil } from "lucide-react";
 import { useState } from "react";
 import Countdown from "react-countdown";
@@ -14,14 +14,18 @@ export function Collection({
   categories,
   emptyMessage = "В коллекции пока нет карточек.",
   isLoading,
-  onUpdated
+  onToggleSelected,
+  onUpdated,
+  selectedCardIds
 }: {
   authFetch: <T>(url: string, options?: RequestInit) => Promise<T>;
   cards: Card[];
   categories: Category[];
   emptyMessage?: string;
   isLoading: boolean;
+  onToggleSelected: (cardId: string, selected: boolean) => void;
   onUpdated: () => void;
+  selectedCardIds: Set<string>;
 }) {
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
 
@@ -55,7 +59,14 @@ export function Collection({
             />
           </div>
         ) : (
-          <article key={card.id} className="overflow-hidden rounded-lg bg-white shadow-sm">
+          <article key={card.id} className="relative overflow-hidden rounded-lg bg-white shadow-sm">
+            <label className="absolute left-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-lg bg-white/90 shadow-sm">
+              <span className="sr-only">Выбрать карточку {card.title}</span>
+              <Checkbox
+                checked={selectedCardIds.has(card.id)}
+                onChange={(event) => onToggleSelected(card.id, event.target.checked)}
+              />
+            </label>
             {card.image_url ? (
               <div className="relative h-40 bg-gray-200">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
