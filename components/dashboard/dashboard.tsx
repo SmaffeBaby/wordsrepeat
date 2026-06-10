@@ -1,6 +1,7 @@
 "use client";
 
 import { CardComposer } from "@/components/cards/card-composer";
+import { CategoryCsvTools } from "@/components/cards/category-csv-tools";
 import { Collection } from "@/components/cards/collection";
 import { CollectionFilter } from "@/components/cards/collection-filter";
 import { CollectionPagination } from "@/components/cards/collection-pagination";
@@ -177,6 +178,13 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
                 authFetch={authFetch}
                 categories={categoriesQuery.data ?? []}
                 onSaved={invalidateCards}
+                selectedCategory={selectedCategory}
+              />
+              <CategoryCsvTools
+                authFetch={authFetch}
+                cards={cards}
+                categories={categoriesQuery.data ?? []}
+                onImported={invalidateCards}
                 selectedCategory={selectedCategory}
               />
               <CollectionFilter
