@@ -3,8 +3,14 @@ create extension if not exists "pgcrypto";
 create table public.categories (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
+  parent_id uuid references public.categories(id) on delete cascade,
   title text not null check (char_length(title) between 1 and 80),
   color text not null default '#2f8f6b',
+  background_color text not null default '#eaf7f1',
+  icon_color text not null default '#2f8f6b',
+  icon_name text not null default 'tag',
+  custom_icon_svg text check (custom_icon_svg is null or char_length(custom_icon_svg) <= 10000),
+  kind text not null default 'category' check (kind in ('category', 'folder')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

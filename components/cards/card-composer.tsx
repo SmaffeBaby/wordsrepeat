@@ -6,7 +6,7 @@ import { REVIEW_INTERVALS } from "@/lib/types";
 import { useMutation } from "@tanstack/react-query";
 import { Button, FileInput, Label, Select, Textarea, TextInput } from "flowbite-react";
 import { ImagePlus, Plus, Save, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function CardComposer({
   authFetch,
@@ -49,12 +49,14 @@ export function CardComposer({
   } = answerImageUpload;
 
   const isEditing = Boolean(editingCard);
+  const availableCategories = useMemo(() => categories.filter((category) => category.kind === "category"), [categories]);
 
   useEffect(() => {
     if (editingCard) return;
-    if (selectedCategory !== "all") setCategoryId(selectedCategory);
-    else if (!categoryId && categories[0]) setCategoryId(categories[0].id);
-  }, [categories, categoryId, editingCard, selectedCategory]);
+    const selectedCategoryRecord = availableCategories.find((category) => category.id === selectedCategory);
+    if (selectedCategoryRecord) setCategoryId(selectedCategoryRecord.id);
+    else if (!categoryId && availableCategories[0]) setCategoryId(availableCategories[0].id);
+  }, [availableCategories, categoryId, editingCard, selectedCategory]);
 
   useEffect(() => {
     if (!editingCard) return;
@@ -152,7 +154,7 @@ export function CardComposer({
             <option value="" disabled>
               Выберите категорию
             </option>
-            {categories.map((category) => (
+            {availableCategories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.title}
               </option>

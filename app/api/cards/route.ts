@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { REVIEW_INTERVALS } from "@/lib/types";
 import { deleteCache, readCache, writeCache } from "@/lib/redis";
 import { getUserFromRequest } from "@/lib/supabase-server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Card } from "@/lib/types";
 
 const allowedIntervals = new Set(REVIEW_INTERVALS.map((interval) => interval.minutes));
@@ -28,12 +29,16 @@ export async function GET(request: Request) {
 
   let query = auth.supabase
     .from("cards")
-    .select("*, categories(id, title, color)")
+    .select("*, categories(id, title, color, background_color, icon_color, icon_name, custom_icon_svg)")
     .order("due_at", { ascending: true })
     .order("deck_position", { ascending: true });
 
   if (dueOnly) query = query.lte("due_at", new Date().toISOString());
-  if (categoryId) query = query.eq("category_id", categoryId);
+  if (categoryId) {
+    const categoryIds = await getCategoryAndDescendantIds(auth.supabase, categoryId);
+    if (categoryIds.length === 0) return NextResponse.json([]);
+    query = query.in("category_id", categoryIds);
+  }
 
   const { data, error } = await query;
 
@@ -41,6 +46,30 @@ export async function GET(request: Request) {
 
   await writeCache(cacheKey, data ?? [], dueOnly ? 10 : 30);
   return NextResponse.json(data ?? []);
+}
+
+async function getCategoryAndDescendantIds(supabase: SupabaseClient, categoryId: string) {
+  const { data, error } = await supabase.from("categories").select("id, parent_id, kind");
+  if (error) return [categoryId];
+
+  const childrenByParent = new Map<string, { id: string; kind: string; parent_id: string | null }[]>();
+  (data ?? []).forEach((category) => {
+    if (!category.parent_id) return;
+    const siblings = childrenByParent.get(category.parent_id) ?? [];
+    siblings.push(category);
+    childrenByParent.set(category.parent_id, siblings);
+  });
+
+  const result = new Set<string>();
+  const queue = [categoryId];
+  while (queue.length > 0) {
+    const currentId = queue.shift() as string;
+    const current = data?.find((category) => category.id === currentId);
+    if (current?.kind !== "folder") result.add(currentId);
+    (childrenByParent.get(currentId) ?? []).forEach((child) => queue.push(child.id));
+  }
+
+  return [...result];
 }
 
 export async function POST(request: Request) {
@@ -71,7 +100,7 @@ export async function POST(request: Request) {
       interval_minutes: interval,
       due_at: new Date().toISOString()
     })
-    .select("*, categories(id, title, color)")
+    .select("*, categories(id, title, color, background_color, icon_color, icon_name, custom_icon_svg)")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -121,7 +150,7 @@ export async function PATCH(request: Request) {
     .from("cards")
     .update(updates)
     .eq("id", body.id)
-    .select("*, categories(id, title, color)")
+    .select("*, categories(id, title, color, background_color, icon_color, icon_name, custom_icon_svg)")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

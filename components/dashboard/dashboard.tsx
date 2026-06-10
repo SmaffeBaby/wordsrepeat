@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 
 export function Dashboard({ page, session }: { page: DashboardPage; session: Session }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [isSidebarWide, setIsSidebarWide] = useState(false);
   const authFetch = useAuthFetch(session);
   const { allDueCardsQuery, cardsQuery, categoriesQuery, dueCardsQuery, invalidateCards } = useDashboardData(
     selectedCategory,
@@ -119,14 +120,20 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_1fr]">
+      <div
+        className={`mx-auto grid max-w-7xl gap-6 px-4 py-6 transition-[grid-template-columns] ${
+          isSidebarWide ? "lg:grid-cols-[420px_1fr]" : "lg:grid-cols-[280px_1fr]"
+        }`}
+      >
         <CategorySidebar
           authFetch={authFetch}
           categories={categoriesQuery.data ?? []}
           cardsCount={cardsQuery.data?.length ?? 0}
-          onCategoryCreated={invalidateCards}
+          isWide={isSidebarWide}
+          onCategoryChanged={invalidateCards}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
+          setWide={setIsSidebarWide}
         />
 
         <section className="min-w-0 space-y-6">

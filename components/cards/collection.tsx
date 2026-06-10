@@ -59,14 +59,7 @@ export function Collection({
             />
           </div>
         ) : (
-          <article key={card.id} className="relative overflow-hidden rounded-lg bg-white shadow-sm">
-            <label className="absolute left-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-lg bg-white/90 shadow-sm">
-              <span className="sr-only">Выбрать карточку {card.title}</span>
-              <Checkbox
-                checked={selectedCardIds.has(card.id)}
-                onChange={(event) => onToggleSelected(card.id, event.target.checked)}
-              />
-            </label>
+          <article key={card.id} className="overflow-hidden rounded-lg bg-white shadow-sm">
             {card.image_url ? (
               <div className="relative h-40 bg-gray-200">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,7 +68,16 @@ export function Collection({
             ) : null}
             <div className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-3">
-                <h3 className="min-w-0 text-lg font-semibold text-ink">{card.title}</h3>
+                <div className="flex min-w-0 items-start gap-3">
+                  <label className="mt-1 shrink-0">
+                    <span className="sr-only">Выбрать карточку {card.title}</span>
+                    <Checkbox
+                      checked={selectedCardIds.has(card.id)}
+                      onChange={(event) => onToggleSelected(card.id, event.target.checked)}
+                    />
+                  </label>
+                  <h3 className="min-w-0 break-words text-lg font-semibold text-ink">{card.title}</h3>
+                </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Badge color="gray">
                     {REVIEW_INTERVALS.find((item) => item.minutes === card.interval_minutes)?.label}
