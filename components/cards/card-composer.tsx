@@ -1,6 +1,7 @@
 "use client";
 
 import { useCardImageUpload } from "@/hooks/use-card-image-upload";
+import { DifficultyFlames } from "@/components/cards/difficulty-flames";
 import type { Card, Category } from "@/lib/types";
 import { REVIEW_INTERVALS } from "@/lib/types";
 import { useMutation } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ export function CardComposer({
   const [hint, setHint] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [interval, setInterval] = useState(60);
+  const [difficulty, setDifficulty] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const mainImageUpload = useCardImageUpload(authFetch);
   const answerImageUpload = useCardImageUpload(authFetch);
@@ -65,6 +67,7 @@ export function CardComposer({
     setHint(editingCard.hint ?? "");
     setCategoryId(editingCard.category_id);
     setInterval(editingCard.interval_minutes);
+    setDifficulty(editingCard.difficulty ?? 1);
     setMainImageUrl(editingCard.image_url);
     setAnswerImageUrl(editingCard.answer_image_url);
     setError(null);
@@ -82,7 +85,8 @@ export function CardComposer({
           hint,
           image_url: mainImageUrl,
           answer_image_url: answerImageUrl,
-          interval_minutes: interval
+          interval_minutes: interval,
+          difficulty
         })
       }),
     onSuccess: () => {
@@ -90,6 +94,7 @@ export function CardComposer({
         setTitle("");
         setValue("");
         setHint("");
+        setDifficulty(1);
         setMainImageUrl(null);
         setAnswerImageUrl(null);
       }
@@ -167,6 +172,10 @@ export function CardComposer({
               </option>
             ))}
           </Select>
+          <div className="rounded-lg bg-gray-50 p-3">
+            <div className="mb-2 text-sm font-medium text-gray-600">Сложность</div>
+            <DifficultyFlames value={difficulty} onChange={setDifficulty} />
+          </div>
           <div>
             <Label htmlFor={isEditing ? "edit-image" : "image"} value="Изображение на лицевой стороне до 5 МБ" />
             <FileInput

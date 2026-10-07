@@ -19,9 +19,10 @@ type CsvCard = {
   image_url?: string | null;
   answer_image_url?: string | null;
   interval_minutes?: number;
+  difficulty?: number;
 };
 
-const importHeaders = ["title", "value", "hint", "interval_minutes", "image_url", "answer_image_url"];
+const importHeaders = ["title", "value", "hint", "interval_minutes", "difficulty", "image_url", "answer_image_url"];
 const exportHeaders = [...importHeaders, "category"];
 
 export function CategoryCsvTools({
@@ -91,6 +92,7 @@ export function CategoryCsvTools({
       card.value,
       card.hint ?? "",
       String(card.interval_minutes),
+      String(card.difficulty ?? 1),
       card.image_url ?? "",
       card.answer_image_url ?? "",
       card.categories?.title ?? ""
@@ -124,7 +126,7 @@ export function CategoryCsvTools({
             ))}
           </Select>
           <div>
-            <Label htmlFor="cards-csv-import" value="CSV: title,value,hint,interval_minutes,image_url,answer_image_url" />
+            <Label htmlFor="cards-csv-import" value="CSV: title,value,hint,interval_minutes,difficulty,image_url,answer_image_url" />
             <FileInput
               id="cards-csv-import"
               accept=".csv,text/csv"
@@ -173,7 +175,8 @@ function parseCardsCsv(text: string): CsvCard[] {
         hint: valueByHeader.get("hint") || null,
         image_url: valueByHeader.get("image_url") || null,
         answer_image_url: valueByHeader.get("answer_image_url") || null,
-        interval_minutes: Number(valueByHeader.get("interval_minutes") || 60)
+        interval_minutes: Number(valueByHeader.get("interval_minutes") || 60),
+        difficulty: Number(valueByHeader.get("difficulty") || 1)
       };
     })
     .filter((card) => card.title || card.value);

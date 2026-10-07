@@ -8,7 +8,7 @@ const allowedIntervals = new Set(REVIEW_INTERVALS.map((interval) => interval.min
 const maxImportRows = 500;
 
 type ImportCard = Pick<Card, "title" | "value"> &
-  Partial<Pick<Card, "hint" | "image_url" | "answer_image_url" | "interval_minutes">>;
+  Partial<Pick<Card, "hint" | "image_url" | "answer_image_url" | "interval_minutes" | "difficulty">>;
 
 type ImportBody = {
   category_id?: string;
@@ -65,6 +65,7 @@ export async function POST(request: Request) {
         image_url: card.image_url || null,
         answer_image_url: card.answer_image_url || null,
         interval_minutes: interval,
+        difficulty: clampDifficulty(card.difficulty),
         due_at: new Date().toISOString()
       }
     ];
@@ -92,4 +93,10 @@ export async function POST(request: Request) {
     skipped: cards.length - rows.length,
     errors: errors.slice(0, 10)
   });
+}
+
+function clampDifficulty(value: unknown) {
+  const difficulty = Number(value ?? 1);
+  if (!Number.isFinite(difficulty)) return 1;
+  return Math.max(1, Math.min(5, Math.round(difficulty)));
 }

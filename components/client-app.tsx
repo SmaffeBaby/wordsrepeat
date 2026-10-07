@@ -8,7 +8,7 @@ import type { Session } from "@supabase/supabase-js";
 import { Spinner } from "flowbite-react";
 import { useEffect, useState } from "react";
 
-export type DashboardPage = "collection" | "review";
+export type DashboardPage = "collection" | "completed" | "review";
 
 function AppShell({ page }: { page: DashboardPage }) {
   const [session, setSession] = useState<Session | null>(null);

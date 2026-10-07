@@ -2,6 +2,7 @@
 
 import { CardComposer } from "@/components/cards/card-composer";
 import { CategoryCsvTools } from "@/components/cards/category-csv-tools";
+import { CompletedPageContent } from "@/components/cards/completed-page-content";
 import { Collection } from "@/components/cards/collection";
 import { CollectionFilter } from "@/components/cards/collection-filter";
 import { CollectionPagination } from "@/components/cards/collection-pagination";
@@ -45,11 +46,33 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
   const [bulkError, setBulkError] = useState<string | null>(null);
   const visibleCardIds = useMemo(() => paginatedCards.map((card) => card.id), [paginatedCards]);
   const allVisibleSelected = visibleCardIds.length > 0 && visibleCardIds.every((id) => selectedCardIds.has(id));
+  const reviewProgress = useMemo(
+    () => ({
+      reviewed: Math.max(0, cards.length - (dueCardsQuery.data?.length ?? 0)),
+      total: cards.length
+    }),
+    [cards.length, dueCardsQuery.data?.length]
+  );
 
   useEffect(() => {
     const existingCardIds = new Set(cards.map((card) => card.id));
     setSelectedCardIds((current) => new Set([...current].filter((id) => existingCardIds.has(id))));
   }, [cards]);
+
+  useEffect(() => {
+    const nextDueAt = cards
+      .map((card) => new Date(card.due_at).getTime())
+      .filter((time) => time > Date.now())
+      .sort((left, right) => left - right)[0];
+
+    if (!nextDueAt) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      invalidateCards();
+    }, Math.max(500, nextDueAt - Date.now() + 250));
+
+    return () => window.clearTimeout(timeout);
+  }, [cards, invalidateCards]);
 
   function toggleSelectedCard(cardId: string, selected: boolean) {
     setSelectedCardIds((current) => {
@@ -156,6 +179,14 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
               >
                 Коллекция
               </Link>
+              <Link
+                className={`rounded-md px-4 py-2 text-sm font-semibold ${
+                  page === "completed" ? "bg-ink text-white" : "text-gray-600"
+                }`}
+                href="/completed"
+              >
+                Завершённые
+              </Link>
             </div>
             <Badge color="success" size="sm">
               К повторению: {allDueCardsQuery.data?.length ?? 0}
@@ -169,9 +200,12 @@ export function Dashboard({ page, session }: { page: DashboardPage; session: Ses
               categories={categoriesQuery.data ?? []}
               isLoading={dueCardsQuery.isLoading}
               onReviewed={invalidateCards}
+              progress={reviewProgress}
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}
             />
+          ) : page === "completed" ? (
+            <CompletedPageContent authFetch={authFetch} onChanged={invalidateCards} />
           ) : (
             <>
               <CardComposer

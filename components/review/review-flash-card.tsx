@@ -1,36 +1,46 @@
 "use client";
 
+import { DifficultyFlames } from "@/components/cards/difficulty-flames";
 import type { Card } from "@/lib/types";
-import { Badge, Button } from "flowbite-react";
+import { REVIEW_INTERVALS } from "@/lib/types";
+import { Badge, Button, Select } from "flowbite-react";
 import { Eye, EyeOff, Sparkles } from "lucide-react";
 import type { PointerEvent } from "react";
 
 export function ReviewFlashCard({
   card,
-  count,
+  difficulty,
   dragOffset = 0,
   exiting = null,
   index,
+  interval,
   isPreview = false,
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  progress,
+  setDifficulty,
   setShowHint,
   setShowValue,
+  setInterval,
   showHint = false,
   showValue = false
 }: {
   card: Card;
-  count: number;
+  difficulty?: number;
   dragOffset?: number;
-  exiting?: "again" | "done" | null;
+  exiting?: "again" | "done" | "learned" | null;
   index: number;
+  interval?: number;
   isPreview?: boolean;
   onPointerDown?: (event: PointerEvent<HTMLDivElement>) => void;
   onPointerMove?: (event: PointerEvent<HTMLDivElement>) => void;
   onPointerUp?: () => void;
+  progress?: { reviewed: number; total: number };
+  setDifficulty?: (value: number) => void;
   setShowHint?: (value: (current: boolean) => boolean) => void;
   setShowValue?: (value: (current: boolean) => boolean) => void;
+  setInterval?: (value: number) => void;
   showHint?: boolean;
   showValue?: boolean;
 }) {
@@ -64,7 +74,9 @@ export function ReviewFlashCard({
         <Badge style={{ backgroundColor: card.categories?.color ?? "#2f8f6b" }}>
           {card.categories?.title ?? "Категория"}
         </Badge>
-        <span className="text-sm text-gray-500">{index} / {count}</span>
+        <span className="text-sm text-gray-500">
+          {progress ? `${progress.reviewed} / ${progress.total}` : index}
+        </span>
       </div>
 
       <h2 className="break-words text-3xl font-semibold text-ink">{card.title}</h2>
@@ -97,15 +109,25 @@ export function ReviewFlashCard({
       ) : null}
 
       {!isPreview ? (
-        <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Button color="light" onClick={() => setShowHint?.((value) => !value)} disabled={!card.hint}>
-            <Sparkles className="mr-2 h-4 w-4" />
-            Подсказка
-          </Button>
-          <Button color="light" onClick={() => setShowValue?.((value) => !value)}>
-            {showValue ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-            {showValue ? "Скрыть" : "Показать"}
-          </Button>
+        <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+          <Select value={interval ?? card.interval_minutes} onChange={(event) => setInterval?.(Number(event.target.value))}>
+            {REVIEW_INTERVALS.map((item) => (
+              <option key={item.minutes} value={item.minutes}>
+                {item.label}
+              </option>
+            ))}
+          </Select>
+          <DifficultyFlames value={difficulty ?? card.difficulty ?? 1} onChange={setDifficulty} />
+          <div className="flex flex-wrap justify-center gap-3 sm:col-span-2">
+            <Button color="light" onClick={() => setShowHint?.((value) => !value)} disabled={!card.hint}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Подсказка
+            </Button>
+            <Button color="light" onClick={() => setShowValue?.((value) => !value)}>
+              {showValue ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+              {showValue ? "Скрыть" : "Показать"}
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

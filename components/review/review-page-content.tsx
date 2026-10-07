@@ -2,9 +2,7 @@
 
 import { ReviewDeck } from "@/components/review/review-deck";
 import type { Card, Category } from "@/lib/types";
-import { REVIEW_INTERVALS } from "@/lib/types";
 import { Select } from "flowbite-react";
-import { useState } from "react";
 
 export function ReviewPageContent({
   authFetch,
@@ -12,6 +10,7 @@ export function ReviewPageContent({
   categories,
   isLoading,
   onReviewed,
+  progress,
   selectedCategory,
   setSelectedCategory
 }: {
@@ -20,17 +19,16 @@ export function ReviewPageContent({
   categories: Category[];
   isLoading: boolean;
   onReviewed: () => void;
+  progress: { reviewed: number; total: number };
   selectedCategory: string;
   setSelectedCategory: (categoryId: string) => void;
 }) {
-  const [interval, setInterval] = useState(60);
-
   return (
     <div className="rounded-lg bg-white p-4 shadow-sm">
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px_180px] md:items-end">
+      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_240px] md:items-end">
         <div>
           <h1 className="text-xl font-semibold text-ink">Режим повторения</h1>
-          <p className="text-sm text-gray-500">Влево: отложить в конец колоды. Вправо: применить интервал.</p>
+          <p className="text-sm text-gray-500">Влево: отложить. Вправо: применить режим внутри карточки.</p>
         </div>
         <Select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
           <option value="all">Все категории</option>
@@ -40,22 +38,14 @@ export function ReviewPageContent({
             </option>
           ))}
         </Select>
-        <Select value={interval} onChange={(event) => setInterval(Number(event.target.value))}>
-          {REVIEW_INTERVALS.map((item) => (
-            <option key={item.minutes} value={item.minutes}>
-              {item.label}
-            </option>
-          ))}
-        </Select>
       </div>
 
       <ReviewDeck
         authFetch={authFetch}
         cards={cards}
-        interval={interval}
         isLoading={isLoading}
         onReviewed={onReviewed}
-        setInterval={setInterval}
+        progress={progress}
       />
     </div>
   );

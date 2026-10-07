@@ -2,6 +2,7 @@
 
 import type { Card, Category } from "@/lib/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 export function useDashboardData(
   selectedCategory: string,
@@ -32,10 +33,10 @@ export function useDashboardData(
     refetchInterval: 20_000
   });
 
-  function invalidateCards() {
+  const invalidateCards = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["cards"] });
     queryClient.invalidateQueries({ queryKey: ["categories"] });
-  }
+  }, [queryClient]);
 
   return {
     allDueCardsQuery,

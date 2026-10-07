@@ -3,7 +3,7 @@
 import type { Card } from "@/lib/types";
 import { PointerEvent, useEffect, useMemo, useState } from "react";
 
-type ReviewResult = "again" | "done";
+type ReviewResult = "again" | "done" | "learned";
 
 const SWIPE_DISTANCE = 96;
 
@@ -58,7 +58,7 @@ export function useReviewDeck(
   async function completeSwipe(result: ReviewResult) {
     if (!current || isReviewing || exiting) return;
     setExiting(result);
-    setDragOffset(result === "done" ? 460 : -460);
+      setDragOffset(result === "again" ? -460 : 460);
 
     window.setTimeout(async () => {
       const reviewed = current;

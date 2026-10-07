@@ -4,33 +4,37 @@ import { useReviewDeck } from "@/hooks/use-review-deck";
 import type { Card } from "@/lib/types";
 import { useMutation } from "@tanstack/react-query";
 import { Button, Spinner } from "flowbite-react";
-import { ArrowLeft, ArrowRight, Clock3 } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowLeft, ArrowRight, CheckCheck, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ReviewFlashCard } from "./review-flash-card";
+
+type ReviewResult = "again" | "done" | "learned";
 
 export function ReviewDeck({
   authFetch,
   cards,
-  interval,
   isLoading,
   onReviewed,
-  setInterval
+  progress
 }: {
   authFetch: <T>(url: string, options?: RequestInit) => Promise<T>;
   cards: Card[];
-  interval: number;
   isLoading: boolean;
   onReviewed: () => void;
-  setInterval: (interval: number) => void;
+  progress: { reviewed: number; total: number };
 }) {
+  const [interval, setInterval] = useState(60);
+  const [difficulty, setDifficulty] = useState(1);
+
   const review = useMutation({
-    mutationFn: ({ result, card }: { result: "again" | "done"; card: Card }) =>
+    mutationFn: ({ result, card }: { result: ReviewResult; card: Card }) =>
       authFetch<Card>("/api/review", {
         method: "POST",
         body: JSON.stringify({
           cardId: card.id,
           result,
-          intervalMinutes: interval
+          intervalMinutes: interval,
+          difficulty
         })
       }),
     onSuccess: onReviewed
@@ -42,10 +46,15 @@ export function ReviewDeck({
     review.isPending
   );
   const currentInterval = deck.current?.interval_minutes;
+  const currentDifficulty = deck.current?.difficulty;
 
   useEffect(() => {
     if (currentInterval) setInterval(currentInterval);
-  }, [currentInterval, setInterval]);
+  }, [currentInterval]);
+
+  useEffect(() => {
+    setDifficulty(currentDifficulty ?? 1);
+  }, [currentDifficulty, deck.current?.id]);
 
   if (isLoading) {
     return (
@@ -70,16 +79,20 @@ export function ReviewDeck({
   return (
     <>
       <div className="relative mx-auto h-[560px] max-w-3xl overflow-hidden rounded-lg bg-gray-50 p-4 sm:p-6">
-        {deck.next ? <ReviewFlashCard card={deck.next} count={deck.deck.length} index={2} isPreview /> : null}
+        {deck.next ? <ReviewFlashCard card={deck.next} index={2} isPreview progress={progress} /> : null}
         <ReviewFlashCard
           card={deck.current}
-          count={deck.deck.length}
+          difficulty={difficulty}
           dragOffset={deck.dragOffset}
           exiting={deck.exiting}
           index={1}
+          interval={interval}
           onPointerDown={deck.onPointerDown}
           onPointerMove={deck.onPointerMove}
           onPointerUp={deck.onPointerUp}
+          progress={progress}
+          setDifficulty={setDifficulty}
+          setInterval={setInterval}
           setShowHint={deck.setShowHint}
           setShowValue={deck.setShowValue}
           showHint={deck.showHint}
@@ -87,7 +100,7 @@ export function ReviewDeck({
         />
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
         <Button
           color="failure"
           className="bg-red-600 text-white enabled:hover:bg-red-700"
@@ -109,6 +122,16 @@ export function ReviewDeck({
         >
           далее
           <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
+        <Button
+          color="light"
+          size="lg"
+          disabled={review.isPending || Boolean(deck.exiting)}
+          isProcessing={review.isPending && deck.exiting === "learned"}
+          onClick={() => deck.completeSwipe("learned")}
+        >
+          <CheckCheck className="mr-2 h-5 w-5" />
+          выучил
         </Button>
       </div>
     </>

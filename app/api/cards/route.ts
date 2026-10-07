@@ -16,6 +16,20 @@ function cardsCacheKey(userId: string, dueOnly: boolean, categoryId: string | nu
   return `cards:${userId}:${duePart}:${categoryId ?? "all"}`;
 }
 
+function clearCardCaches(userId: string, ...categoryIds: (string | null | undefined)[]) {
+  const keys = new Set([
+    ...cardCacheKeys(userId),
+    `cards:${userId}:all:all`,
+    `cards:${userId}:due:all`,
+    `cards:${userId}:completed`
+  ]);
+  categoryIds.filter(Boolean).forEach((categoryId) => {
+    keys.add(`cards:${userId}:all:${categoryId}`);
+    keys.add(`cards:${userId}:due:${categoryId}`);
+  });
+  return deleteCache(...keys);
+}
+
 export async function GET(request: Request) {
   const auth = await getUserFromRequest(request);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: 401 });
@@ -30,6 +44,7 @@ export async function GET(request: Request) {
   let query = auth.supabase
     .from("cards")
     .select("*, categories(id, title, color, background_color, icon_color, icon_name, custom_icon_svg)")
+    .is("completed_at", null)
     .order("due_at", { ascending: true })
     .order("deck_position", { ascending: true });
 
@@ -98,6 +113,7 @@ export async function POST(request: Request) {
       image_url: body.image_url || null,
       answer_image_url: body.answer_image_url || null,
       interval_minutes: interval,
+      difficulty: clampDifficulty(body.difficulty),
       due_at: new Date().toISOString()
     })
     .select("*, categories(id, title, color, background_color, icon_color, icon_name, custom_icon_svg)")
@@ -105,13 +121,7 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await deleteCache(
-    ...cardCacheKeys(auth.user.id),
-    `cards:${auth.user.id}:all:all`,
-    `cards:${auth.user.id}:all:${body.category_id}`,
-    `cards:${auth.user.id}:due:all`,
-    `cards:${auth.user.id}:due:${body.category_id}`
-  );
+  await clearCardCaches(auth.user.id, body.category_id);
   return NextResponse.json(data, { status: 201 });
 }
 
@@ -130,6 +140,8 @@ export async function PATCH(request: Request) {
   if (body.image_url !== undefined) updates.image_url = body.image_url;
   if (body.answer_image_url !== undefined) updates.answer_image_url = body.answer_image_url;
   if (body.category_id !== undefined) updates.category_id = body.category_id;
+  if (body.difficulty !== undefined) updates.difficulty = clampDifficulty(body.difficulty);
+  if (body.completed_at !== undefined) updates.completed_at = body.completed_at;
   if (body.interval_minutes !== undefined) {
     const interval = Number(body.interval_minutes);
     if (!allowedIntervals.has(interval)) {
@@ -155,15 +167,7 @@ export async function PATCH(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await deleteCache(
-    ...cardCacheKeys(auth.user.id),
-    `cards:${auth.user.id}:all:all`,
-    `cards:${auth.user.id}:all:${currentCard.category_id}`,
-    `cards:${auth.user.id}:all:${data.category_id}`,
-    `cards:${auth.user.id}:due:all`,
-    `cards:${auth.user.id}:due:${currentCard.category_id}`,
-    `cards:${auth.user.id}:due:${data.category_id}`
-  );
+  await clearCardCaches(auth.user.id, currentCard.category_id, data.category_id);
   return NextResponse.json(data);
 }
 
@@ -187,13 +191,13 @@ export async function DELETE(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await deleteCache(
-    ...cardCacheKeys(auth.user.id),
-    `cards:${auth.user.id}:all:all`,
-    `cards:${auth.user.id}:all:${currentCard.category_id}`,
-    `cards:${auth.user.id}:due:all`,
-    `cards:${auth.user.id}:due:${currentCard.category_id}`
-  );
+  await clearCardCaches(auth.user.id, currentCard.category_id);
 
   return NextResponse.json({ ok: true });
+}
+
+function clampDifficulty(value: unknown) {
+  const difficulty = Number(value ?? 1);
+  if (!Number.isFinite(difficulty)) return 1;
+  return Math.max(1, Math.min(5, Math.round(difficulty)));
 }

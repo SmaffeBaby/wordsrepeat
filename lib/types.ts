@@ -24,8 +24,10 @@ export type Card = {
   image_url: string | null;
   answer_image_url: string | null;
   interval_minutes: number;
+  difficulty: number;
   due_at: string;
   deck_position: number;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
   categories?: Pick<Category, "id" | "title" | "color" | "background_color" | "icon_color" | "icon_name" | "custom_icon_svg">;

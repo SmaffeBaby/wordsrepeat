@@ -1,6 +1,7 @@
 "use client";
 
 import { CardComposer } from "@/components/cards/card-composer";
+import { DifficultyFlames } from "@/components/cards/difficulty-flames";
 import type { Card, Category } from "@/lib/types";
 import { REVIEW_INTERVALS } from "@/lib/types";
 import { Badge, Button, Checkbox, Spinner } from "flowbite-react";
@@ -93,6 +94,7 @@ export function Collection({
                 </div>
               </div>
               <p className="line-clamp-3 text-sm leading-6 text-gray-600">{card.value}</p>
+              <DifficultyFlames value={card.difficulty ?? 1} />
               {card.answer_image_url ? (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <ImageIcon className="h-4 w-4" />

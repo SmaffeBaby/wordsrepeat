@@ -25,8 +25,10 @@ create table public.cards (
   image_url text,
   answer_image_url text,
   interval_minutes integer not null default 60 check (interval_minutes in (5, 10, 20, 60, 180, 360, 720, 1440, 4320, 10080)),
+  difficulty integer not null default 1 check (difficulty between 1 and 5),
   due_at timestamptz not null default now(),
   deck_position integer not null default 0,
+  completed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -44,6 +46,7 @@ create table public.review_logs (
 create index categories_user_created_idx on public.categories(user_id, created_at desc);
 create index cards_user_due_idx on public.cards(user_id, due_at asc, deck_position asc);
 create index cards_category_idx on public.cards(category_id, created_at desc);
+create index cards_completed_idx on public.cards(user_id, completed_at desc) where completed_at is not null;
 create index review_logs_user_reviewed_idx on public.review_logs(user_id, reviewed_at desc);
 
 create or replace function public.touch_updated_at()
